@@ -107,3 +107,42 @@
         )
     )
 )
+
+;; Processes liquidation of an undercollateralized position
+(define-private (liquidate-position (loan-id uint))
+    (let
+        (
+            (loan (unwrap! (map-get? loans {loan-id: loan-id}) ERR-LOAN-NOT-FOUND))
+            (borrower (get borrower loan))
+        )
+        (begin
+            (map-set loans
+                {loan-id: loan-id}
+                (merge loan {status: "liquidated"})
+            )
+            (map-delete user-loans {user: borrower})
+            (ok true)
+        )
+    )
+)
+
+;; Validates that a loan ID exists in the system
+(define-private (validate-loan-id (loan-id uint))
+    (and 
+        (> loan-id u0)
+        (<= loan-id (var-get total-loans-issued))
+    )
+)
+
+;; Checks if an asset is supported by the protocol
+(define-private (is-valid-asset (asset (string-ascii 3)))
+    (is-some (index-of VALID-ASSETS asset))
+)
+
+;; Validates price data is within acceptable range
+(define-private (is-valid-price (price uint))
+    (and 
+        (> price u0)
+        (<= price u1000000000000) ;; Reasonable upper limit for price
+    )
+)
