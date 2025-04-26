@@ -262,3 +262,39 @@
         )
     )
 )
+
+;; Governance Functions
+
+;; Updates the minimum collateral ratio requirement
+(define-public (update-collateral-ratio (new-ratio uint))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (asserts! (>= new-ratio u110) ERR-INVALID-AMOUNT)
+        (var-set minimum-collateral-ratio new-ratio)
+        (ok true)
+    )
+)
+
+;; Updates the liquidation threshold ratio
+(define-public (update-liquidation-threshold (new-threshold uint))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (asserts! (>= new-threshold u110) ERR-INVALID-AMOUNT)
+        (var-set liquidation-threshold new-threshold)
+        (ok true)
+    )
+)
+
+;; Updates price feed data for supported assets
+(define-public (update-price-feed (asset (string-ascii 3)) (new-price uint))
+    (begin
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (asserts! (is-valid-asset asset) ERR-INVALID-ASSET)
+        (asserts! (is-valid-price new-price) ERR-INVALID-PRICE)
+        
+        (ok (map-set collateral-prices
+            {asset: asset}
+            {price: new-price}
+        ))
+    )
+)
