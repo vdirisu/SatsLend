@@ -68,3 +68,42 @@
     { asset: (string-ascii 3) }
     { price: uint }
 )
+
+;; Private Functions
+
+;; Calculates the current collateral ratio for a loan
+(define-private (calculate-collateral-ratio (collateral uint) (loan uint) (btc-price uint))
+    (let
+        (
+            (collateral-value (* collateral btc-price))
+            (ratio (* (/ collateral-value loan) u100))
+        )
+        ratio
+    )
+)
+
+;; Calculates accrued interest based on time elapsed
+(define-private (calculate-interest (principal uint) (rate uint) (blocks uint))
+    (let
+        (
+            (interest-per-block (/ (* principal rate) (* u100 u144))) ;; Daily interest divided by blocks per day
+            (total-interest (* interest-per-block blocks))
+        )
+        total-interest
+    )
+)
+
+;; Checks if a loan requires liquidation based on current collateral ratio
+(define-private (check-liquidation (loan-id uint))
+    (let
+        (
+            (loan (unwrap! (map-get? loans {loan-id: loan-id}) ERR-LOAN-NOT-FOUND))
+            (btc-price (unwrap! (get price (map-get? collateral-prices {asset: "BTC"})) ERR-NOT-INITIALIZED))
+            (current-ratio (calculate-collateral-ratio (get collateral-amount loan) (get loan-amount loan) btc-price))
+        )
+        (if (<= current-ratio (var-get liquidation-threshold))
+            (liquidate-position loan-id)
+            (ok true)
+        )
+    )
+)
